@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ivyglum/fulllength</title>
+    <style>
+        body {
+            background-image: url('assets/scary.gif');
+            background-size: cover;
+            background-position: center;
+            background-repeat: repeat;
+            color: white;
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+        h1 {
+            color: red;
+        }
+        #puzzle-container {
+            display: grid;
+            grid-template-columns: repeat(3, 80px); /* 3 columnas de 80px cada una */
+            grid-template-rows: repeat(3, 80px); /* 3 filas de 80px cada una */
+            gap: 1px; /* Espacio entre las piezas */
+            width: 240px;
+            height: 240px;
+            margin: 20px auto;
+            border: 2px solid white;
+            background-color: gray; /* Opcional, para claridad visual en pruebas */
+        }
+        .piece {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 80px;
+            height: 80px;
+            background-size: 240px 240px; /* Tamaño de la imagen */
+            cursor: pointer; /* Permite mover las piezas */
+            background-position: center; /* Centra la imagen dentro de la caja de la pieza */
+            background-repeat: no-repeat; /* Evita que la imagen se repita */
+        }
+        .hidden {
+            display: none;
+        }
+        #screamer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            object-fit: cover;
+            z-index: 10;
+        }
+        #next-button {
+            background-color: red;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin-top: 20px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>Complete the Puzzle</h1>
+    <p>Try to arrange the pieces!</p>
+    <div id="puzzle-container"></div>
+    <audio id="scream-audio" class="hidden">
+        <source src="assets/screamer-audio.mp3" type="audio/mpeg">
+    </audio>
+    <img id="screamer" src="assets/screamer-image.jpg" class="hidden" alt="Scary Image">
+    <button id="next-button" class="hidden" onclick="loadNextPuzzle()">Next</button>
+
+    <script>
+        // Puzzle setup
+        const puzzleContainer = document.getElementById('puzzle-container');
+        const screamAudio = document.getElementById('scream-audio');
+        const screamer = document.getElementById('screamer');
+        const nextButton = document.getElementById('next-button');
+
+        // Split image into pieces
+        const imageSrc = 'assets/puzzle-image.jpg'; // Replace with your puzzle image
+        const pieces = Array.from({ length: 9 }, (_, i) => i);
+        pieces.sort(() => Math.random() - 0.5); // Shuffle pieces
+
+        pieces.forEach(index => {
+            const piece = document.createElement('div');
+            piece.classList.add('piece');
+            piece.style.backgroundImage = `url('${imageSrc}')`;
+            piece.style.backgroundPosition = `-${(index % 3) * 80}px -${Math.floor(index / 3) * 80}px`; // Posición de la imagen dentro de la pieza
+            piece.draggable = true; // Permitir arrastrar las piezas
+            puzzleContainer.appendChild(piece);
+        });
+
+        // Drag and drop handlers
+        let draggedPiece = null;
+
+        function dragStart(event) {
+            draggedPiece = event.target;
+        }
+
+        function dragOver(event) {
+            event.preventDefault();
+        }
+
+        function drop(event) {
+            event.preventDefault();
+            if (event.target.classList.contains('piece') && draggedPiece !== event.target) {
+                const draggedIndex = Array.from(puzzleContainer.children).indexOf(draggedPiece);
+                const targetIndex = Array.from(puzzleContainer.children).indexOf(event.target);
+
+                // Swap pieces
+                if (draggedIndex !== targetIndex) {
+                    puzzleContainer.insertBefore(draggedPiece, targetIndex > draggedIndex ? event.target.nextSibling : event.target);
+                    puzzleContainer.insertBefore(event.target, draggedPiece);
+                }
+            }
+        }
+
+        // Enable drag-and-drop
+        puzzleContainer.addEventListener('dragstart', dragStart);
+        puzzleContainer.addEventListener('dragover', dragOver);
+        puzzleContainer.addEventListener('drop', drop);
+
+        // Check if the puzzle is solved
+        function checkPuzzleSolved() {
+            const pieces = Array.from(puzzleContainer.children);
+            for (let i = 0; i < pieces.length; i++) {
+                const pieceIndex = Array.from(puzzleContainer.children).indexOf(pieces[i]);
+                if (pieceIndex !== i) return false;
+            }
+            return true;
+        }
+
+        // Load the next puzzle
+        function loadNextPuzzle() {
+            // Hide the current puzzle container
+            puzzleContainer.classList.add('hidden');
+            screamAudio.pause();
+            screamer.classList.add('hidden');
+            document.querySelector('h1').classList.remove('hidden');
+            document.querySelector('p').classList.remove('hidden');
+            nextButton.classList.add('hidden');
+
+            // Clear the current puzzle
+            puzzleContainer.innerHTML = '';
+
+            // Here you would set up the next puzzle (e.g., load a new image)
+            setupPuzzle('assets/next-puzzle-image.jpg'); // Replace with the path to the next puzzle image
+        }
+
+        // Trigger screamer after 20 seconds
+        setTimeout(() => {
+            screamAudio.play();
+            screamer.classList.remove('hidden');
+            document.body.style.backgroundColor = 'red';
+            document.querySelector('h1').classList.add('hidden');
+            document.querySelector('p').classList.add('hidden');
+            puzzleContainer.classList.add('hidden');
+            nextButton.classList.remove('hidden');
+        }, 20000);
+
+        // Setup the puzzle
+        function setupPuzzle(imagePath) {
+            const pieces = Array.from({ length: 9 }, (_, i) => i);
+            pieces.sort(() => Math.random() - 0.5); // Shuffle pieces
+
+            pieces.forEach(index => {
+                const piece = document.createElement('div');
+                piece.classList.add('piece');
+                piece.style.backgroundImage = `url('${imagePath}')`;
+                piece.style.backgroundPosition = `-${(index % 3) * 80}px -${Math.floor(index / 3) * 80}px`; // Posición de la imagen dentro de la pieza
+                piece.draggable = true; // Permitir arrastrar las piezas
+                puzzleContainer.appendChild(piece);
+            });
+        }
+    </script>
+</body>
+</html>
